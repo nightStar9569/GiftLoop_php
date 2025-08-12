@@ -1,0 +1,21 @@
+# Credentials / environment
+api/credentials.php
+.env
+.env.*
+api/client_secret_985659823724-1a529ndasdr09aenc9jvjcj6e15jt6qu.apps.googleusercontent.com.json
+
+# Logs
+*.log
+logs/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Dependencies (if introduced later)
+node_modules/
+vendor/ 
