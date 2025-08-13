@@ -174,8 +174,7 @@ include __DIR__ . '/includes/header.php'; ?>
             <div class="form-group"><label for="corpDescription">説明</label><input type="text" id="corpDescription"
                 placeholder="任意: 詳細説明" /></div>
             <div class="form-group"><label for="corpImageUrl">画像URL</label>
-              <div class="input-wrapper"><input type="url" id="corpImageUrl"
-                  placeholder="https://example.com/image.jpg" /><input type="file" id="corpImageFile" accept="image/*"
+              <div class="input-wrapper"><input type="url" id="corpImageUrl" style="display:none"/><input type="file" id="corpImageFile" accept="image/*"
                   style="margin-left: .5rem;"></div><small>ファイル選択でアップロードし、自動入力されます</small>
             </div>
             <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="corpIsSuper" /><span
@@ -187,6 +186,37 @@ include __DIR__ . '/includes/header.php'; ?>
         </form>
       </div>
       <div class="admin-list" id="corporateGiftsList"></div>
+
+      <!-- Edit Corporate Gift Modal -->
+      <div id="corpEditModal" style="position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 1rem;">
+        <div class="form-card" style="width: 100%; max-width: 680px;">
+          <div class="form-header">
+            <h2><i class="fas fa-pen-to-square"></i> 会社ギフトを編集</h2>
+            <p>選択した会社ギフトの情報を更新します</p>
+          </div>
+          <form id="corpEditForm">
+            <input type="hidden" id="corpEditId" />
+            <div class="form-row">
+              <div class="form-group"><label for="corpEditTitle">タイトル</label><input type="text" id="corpEditTitle" required /></div>
+              <div class="form-group"><label for="corpEditCategory">カテゴリー</label><select id="corpEditCategory"><option value="food">食品・スイーツ</option><option value="fashion">ファッション</option><option value="beauty">美容・コスメ</option><option value="electronics">家電・電子機器</option><option value="books">書籍・文具</option><option value="hobby">趣味・スポーツ</option><option value="home">生活用品</option><option value="other">その他</option></select></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label for="corpEditSupplyPerDay">日次供給数</label><input type="number" id="corpEditSupplyPerDay" min="0" step="1" /></div>
+              <div class="form-group"><label for="corpEditTotalSupply">総供給数</label><input type="number" id="corpEditTotalSupply" min="0" step="1" /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label for="corpEditStartAt">開始日時</label><input type="datetime-local" id="corpEditStartAt" required /></div>
+              <div class="form-group"><label for="corpEditEndAt">終了日時</label><input type="datetime-local" id="corpEditEndAt" required /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label for="corpEditDescription">説明</label><input type="text" id="corpEditDescription" placeholder="任意: 詳細説明" /></div>
+              <div class="form-group"><label for="corpEditImageUrl">画像URL</label><div class="input-wrapper"><input type="url" id="corpEditImageUrl" style="display:none" /><input type="file" id="corpEditImageFile" accept="image/*" style="margin-left: .5rem;"></div></div>
+              <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="corpEditSuper" /><span class="checkmark"></span>スーパープレゼント</label></div>
+            </div>
+            <div class="form-actions" style="justify-content: flex-end;"><button type="button" class="btn-primary" id="corpEditCancel" style="background: #999; border: none;"><i class="fas fa-times"></i> キャンセル</button><button type="submit" class="btn-primary" id="corpEditSave" style="margin-left: .75rem;"><i class="fas fa-save"></i> 更新</button></div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <div id="tab-users" class="admin-panel">

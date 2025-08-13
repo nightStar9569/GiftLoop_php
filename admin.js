@@ -472,7 +472,7 @@ function initCorporatePanel() {
               ${c.image_url ? `<div class="thumb" style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex:0 0 auto;background:#f3f4f6;display:flex;align-items:center;justify-content:center"><img src="${c.image_url}" alt="${c.title||''}" style="width:100%;height:100%;object-fit:cover" /></div>` : ''}
               <div>
                 <div class="title">${c.title}</div>
-                <div class="sub">カテゴリ: ${c.category} ・ 期間: ${c.start_at} 〜 ${c.end_at}</div>
+                <div class="sub">カテゴリ: ${getCategoryText(c.category)} ・ 期間: ${c.start_at} 〜 ${c.end_at}</div>
               </div>
             </div>
           </div>
@@ -481,13 +481,10 @@ function initCorporatePanel() {
             <button class="btn-primary" data-action="delete">削除</button>
           </div>`;
         row.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+          if (!confirm('この会社ギフトを削除しますか？')) return;
           try { await giftApi.adminCorporateDelete(c.id); showNotification('削除しました。','success'); render(); } catch(e){ showNotification(e.message||'削除に失敗しました。','error'); }
         });
-        row.querySelector('[data-action="edit"]').addEventListener('click', async () => {
-          const title = prompt('タイトル', c.title||''); if (title===null) return;
-          const category = prompt('カテゴリ', c.category||'other')||'other';
-          try { await giftApi.adminCorporateUpdate(c.id, { title, category }); showNotification('更新しました。','success'); render(); } catch(e){ showNotification(e.message||'更新に失敗しました。','error'); }
-        });
+        row.querySelector('[data-action="edit"]').addEventListener('click', () => openCorpEditModal(c));
         listEl.appendChild(row);
       });
     } catch (e) {
@@ -495,6 +492,87 @@ function initCorporatePanel() {
     }
   }
   render();
+}
+
+// Corporate edit modal (top-level)
+function openCorpEditModal(c){
+  const modal = document.getElementById('corpEditModal');
+  if (!modal) return;
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const setSel = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+
+  setVal('corpEditId', c.id);
+  setVal('corpEditTitle', c.title||'');
+  setSel('corpEditCategory', c.category||'other');
+  setVal('corpEditSupplyPerDay', c.supply_per_day||'');
+  setVal('corpEditTotalSupply', c.total_supply||'');
+  setVal('corpEditStartAt', (c.start_at||'').replace(' ','T'));
+  setVal('corpEditEndAt', (c.end_at||'').replace(' ','T'));
+  setVal('corpEditDescription', c.description||'');
+  setVal('corpEditImageUrl', c.image_url||'');
+  const superEl = document.getElementById('corpEditSuper');
+  if (superEl) superEl.checked = !!c.is_super;
+
+  const fileEl = document.getElementById('corpEditImageFile');
+  if (fileEl && !fileEl._bound) {
+    fileEl.addEventListener('change', async () => {
+      const file = fileEl.files && fileEl.files[0]; if (!file) return;
+      try {
+        showNotification('画像をアップロード中...', 'info');
+        const fd = new FormData(); fd.append('file', file);
+        const url = await uploadAdminFile(fd);
+        setVal('corpEditImageUrl', url);
+        showNotification('アップロード完了', 'success');
+      } catch(e){ showNotification(e.message||'アップロードに失敗しました。','error'); }
+      fileEl.value='';
+    });
+    fileEl._bound = true;
+  }
+
+  const form = document.getElementById('corpEditForm');
+  if (form && !form._bound) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = getVal('corpEditId');
+      const payload = {
+        title: getVal('corpEditTitle'),
+        category: getVal('corpEditCategory') || 'other',
+        supplyPerDay: Number(getVal('corpEditSupplyPerDay')||0),
+        totalSupply: getVal('corpEditTotalSupply') ? Number(getVal('corpEditTotalSupply')) : null,
+        startAt: getVal('corpEditStartAt'),
+        endAt: getVal('corpEditEndAt'),
+        description: getVal('corpEditDescription') || null,
+        imageUrl: getVal('corpEditImageUrl') || null,
+        isSuper: !!(document.getElementById('corpEditSuper')?.checked)
+      };
+      if (!payload.title || !payload.startAt || !payload.endAt) { showNotification('必須項目を入力してください。','error'); return; }
+      try {
+        await giftApi.adminCorporateUpdate(id, payload);
+        showNotification('更新しました。','success');
+        closeCorpEditModal();
+        // Refresh list
+        const list = document.getElementById('corporateGiftsList');
+        if (list) list.innerHTML = '';
+        // re-render
+        initCorporatePanel();
+      } catch(e){ showNotification(e.message||'更新に失敗しました。','error'); }
+    });
+    form._bound = true;
+  }
+
+  const cancelBtn = document.getElementById('corpEditCancel');
+  if (cancelBtn && !cancelBtn._bound) {
+    cancelBtn.addEventListener('click', closeCorpEditModal);
+    cancelBtn._bound = true;
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeCorpEditModal(){
+  const modal = document.getElementById('corpEditModal');
+  if (modal) modal.style.display = 'none';
 }
 
 // Users Monitoring
