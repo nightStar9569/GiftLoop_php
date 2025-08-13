@@ -31,4 +31,4 @@ return [
         ],
         'redirect_after_login' => '/mypage.php',
     ],
-]; 
+];

@@ -1,5 +1,5 @@
 <?php
-spl_autoload_register(function(string $class){
+spl_autoload_register(function (string $class) {
     $prefix = 'App\\';
     $baseDir = __DIR__ . DIRECTORY_SEPARATOR;
     if (strncmp($prefix, $class, strlen($prefix)) !== 0) {
@@ -10,4 +10,4 @@ spl_autoload_register(function(string $class){
     if (is_file($file)) {
         require_once $file;
     }
-}); 
+});

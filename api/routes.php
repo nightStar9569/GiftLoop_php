@@ -59,34 +59,36 @@ $router->patch('admin/corporate/{id}', [CorporateController::class, 'adminUpdate
 $router->delete('admin/corporate/{id}', [CorporateController::class, 'adminDelete'], [RequireAdmin::class]);
 
 // Admin Media Upload (simple local storage)
-$router->post('admin/upload', function() {
-    if (!is_admin()) json_response(['error' => 'Forbidden'], 403);
+$router->post('admin/upload', function () {
+    if (!is_admin())
+        json_response(['error' => 'Forbidden'], 403);
     if (empty($_FILES['file']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
         json_response(['error' => 'No file'], 400);
     }
     $file = $_FILES['file'];
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $allowed = ['jpg','jpeg','png','gif','webp'];
+    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     if (!in_array($ext, $allowed, true)) {
         json_response(['error' => 'Invalid file type'], 415);
     }
     // Save into api/uploads so api/index.php can serve them at /api/uploads/*
     $uploadsDir = __DIR__ . '/uploads';
-    if (!is_dir($uploadsDir)) @mkdir($uploadsDir, 0775, true);
+    if (!is_dir($uploadsDir))
+        @mkdir($uploadsDir, 0775, true);
     $fname = bin2hex(random_bytes(8)) . '.' . $ext;
     $dest = $uploadsDir . '/' . $fname;
     if (!move_uploaded_file($file['tmp_name'], $dest)) {
         json_response(['error' => 'Upload failed'], 500);
     }
-    $base = (function(){
+    $base = (function () {
         $cfg = require __DIR__ . '/config.php';
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $basePath = rtrim((string)($cfg['app']['base_path'] ?? ''), '/');
+        $basePath = rtrim((string) ($cfg['app']['base_path'] ?? ''), '/');
         return sprintf('%s://%s%s', $scheme, $host, $basePath);
     })();
     $url = $base . '/api/uploads/' . $fname;
     json_response(['ok' => true, 'url' => $url, 'filename' => $fname]);
 }, [RequireAdmin::class]);
 
-return $router; 
+return $router;

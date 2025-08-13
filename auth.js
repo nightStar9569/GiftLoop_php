@@ -1,6 +1,6 @@
 // Authentication functionality
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initAuth);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initAuth);
 } else {
   initAuth();
 }
@@ -13,15 +13,17 @@ function initAuth() {
 
   // Add early click guard for terms checkbox to avoid native validation blocking our message
   if (registerForm) {
-    const registerSubmitBtn = registerForm.querySelector('.btn-auth');
+    const registerSubmitBtn = registerForm.querySelector(".btn-auth");
     if (registerSubmitBtn) {
-      registerSubmitBtn.addEventListener('click', function (e) {
-        const termsChecked = !!registerForm.querySelector('input[name="terms"]').checked;
+      registerSubmitBtn.addEventListener("click", function (e) {
+        const termsChecked = !!registerForm.querySelector('input[name="terms"]')
+          .checked;
         if (!termsChecked) {
           e.preventDefault();
-          showNotification('利用規約に同意してください。', 'error');
+          showNotification("利用規約に同意してください。", "error");
           const termsInput = registerForm.querySelector('input[name="terms"]');
-          if (termsInput && typeof termsInput.focus === 'function') termsInput.focus();
+          if (termsInput && typeof termsInput.focus === "function")
+            termsInput.focus();
         }
       });
     }
@@ -160,7 +162,7 @@ function initAuth() {
       e.preventDefault();
       try {
         window.giftApi?.oauthGoogleStart?.();
-      } catch(_) {}
+      } catch (_) {}
     });
   });
 
@@ -175,18 +177,20 @@ function initAuth() {
 }
 
 // Handle OAuth errors shown via query string
-(function(){
+(function () {
   const params = new URLSearchParams(window.location.search);
-  const err = params.get('oauth_error');
+  const err = params.get("oauth_error");
   if (err) {
     const map = {
-      google_not_configured: 'Googleログインの設定が完了していません。管理者にお問い合わせください。',
-      invalid_state: 'セキュリティ検証に失敗しました。もう一度お試しください。',
-      token_exchange_failed: 'Googleとの通信に失敗しました。時間をおいて再度お試しください。',
-      userinfo_failed: 'Googleアカウント情報の取得に失敗しました。',
+      google_not_configured:
+        "Googleログインの設定が完了していません。管理者にお問い合わせください。",
+      invalid_state: "セキュリティ検証に失敗しました。もう一度お試しください。",
+      token_exchange_failed:
+        "Googleとの通信に失敗しました。時間をおいて再度お試しください。",
+      userinfo_failed: "Googleアカウント情報の取得に失敗しました。",
     };
-    const msg = map[err] || 'OAuthエラーが発生しました。';
-    showNotification(msg, 'error');
+    const msg = map[err] || "OAuthエラーが発生しました。";
+    showNotification(msg, "error");
   }
 })();
 

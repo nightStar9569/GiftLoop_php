@@ -112,6 +112,12 @@ class App {
             if (userName) {
                 userName.textContent = userData.firstName || 'ユーザー';
             }
+            // Update avatar image
+            const navAvatar = document.getElementById('navAvatar');
+            const avatarUrl = userData.avatarUrl || userData.avatar_url;
+            if (navAvatar && avatarUrl) {
+                navAvatar.innerHTML = `<img src="${avatarUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover" />`;
+            }
             // Show admin nav if admin
             const adminNav = document.querySelector('.admin-nav');
             if (adminNav && (userData.is_admin || userData.isAdmin)) {

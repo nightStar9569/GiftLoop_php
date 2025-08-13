@@ -19,4 +19,4 @@ foreach ($items as $it) {
     $stmt->execute($it);
 }
 
-echo "Seeded products: ".count($items)."\n"; 
+echo "Seeded products: " . count($items) . "\n";

@@ -7,6 +7,7 @@ $initialized = false;
 if (!$initialized) {
     try {
         ensure_database_initialized();
+        ensure_runtime_migrations();
     } catch (Throwable $e) {
         if ((require __DIR__ . '/config.php')['app']['debug']) {
             json_response(['error' => 'Database not initialized: ' . $e->getMessage()], 500);
@@ -81,4 +82,4 @@ try {
         json_response(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()], 500);
     }
     json_response(['error' => 'Server error'], 500);
-} 
+}

@@ -91,7 +91,29 @@ class AuthController
 
     public function me(): void
     {
-        $user = current_user();
+        $sessionUser = current_user();
+        if (!$sessionUser) json_response(['user' => null]);
+        $pdo = db();
+        $stmt = $pdo->prepare('SELECT id, email, first_name, last_name, membership_level, points, gifts_received, gifts_sent, is_admin, birth_date, avatar_url FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([(int)$sessionUser['id']]);
+        $row = $stmt->fetch();
+        if (!$row) json_response(['user' => $sessionUser]);
+        $user = [
+            'id' => (int)$row['id'],
+            'email' => $row['email'],
+            'firstName' => $row['first_name'],
+            'lastName' => $row['last_name'],
+            'membershipLevel' => $row['membership_level'],
+            'points' => (int)($row['points'] ?? 0),
+            'giftsReceived' => (int)($row['gifts_received'] ?? 0),
+            'giftsSent' => (int)($row['gifts_sent'] ?? 0),
+            'is_admin' => (int)($row['is_admin'] ?? 0),
+            'birthDate' => $row['birth_date'] ?? null,
+            'avatarUrl' => $row['avatar_url'] ?? null,
+        ];
+        // Refresh session for downstream usage
+        start_app_session();
+        $_SESSION['user'] = $user;
         json_response(['user' => $user]);
     }
 
@@ -105,14 +127,14 @@ class AuthController
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $cfg = $this->getConfig();
-        $basePath = rtrim((string)($cfg['app']['base_path'] ?? ''), '/');
+        $basePath = rtrim((string) ($cfg['app']['base_path'] ?? ''), '/');
         return sprintf('%s://%s%s', $scheme, $host, $basePath);
     }
 
     public function googleStart(): void
     {
         $cfg = $this->getConfig();
-        $clientId = trim((string)($cfg['oauth']['google']['client_id'] ?? ''));
+        $clientId = trim((string) ($cfg['oauth']['google']['client_id'] ?? ''));
         if ($clientId === '') {
             $back = $this->getBaseUrl() . '/auth.php?oauth_error=google_not_configured';
             header('Location: ' . $back, true, 302);
@@ -143,7 +165,7 @@ class AuthController
         $cfg = $this->getConfig();
         start_app_session();
         $expectedState = $_SESSION['oauth_state'] ?? '';
-        $receivedState = (string)($_GET['state'] ?? '');
+        $receivedState = (string) ($_GET['state'] ?? '');
         if (!$expectedState || !hash_equals($expectedState, $receivedState)) {
             $back = $this->getBaseUrl() . '/auth.php?oauth_error=invalid_state';
             header('Location: ' . $back, true, 302);
@@ -151,15 +173,15 @@ class AuthController
         }
         unset($_SESSION['oauth_state']);
 
-        $code = (string)($_GET['code'] ?? '');
+        $code = (string) ($_GET['code'] ?? '');
         if ($code === '') {
             $back = $this->getBaseUrl() . '/auth.php?oauth_error=token_exchange_failed';
             header('Location: ' . $back, true, 302);
             exit;
         }
 
-        $clientId = trim((string)($cfg['oauth']['google']['client_id'] ?? ''));
-        $clientSecret = trim((string)($cfg['oauth']['google']['client_secret'] ?? ''));
+        $clientId = trim((string) ($cfg['oauth']['google']['client_id'] ?? ''));
+        $clientSecret = trim((string) ($cfg['oauth']['google']['client_secret'] ?? ''));
         $redirectUri = $this->getBaseUrl() . '/api/auth/google/callback';
 
         // Exchange code for tokens
@@ -195,9 +217,9 @@ class AuthController
                 $d = $b['date'] ?? null; // ['year'=>YYYY,'month'=>M,'day'=>D] (year may be missing)
                 if (is_array($d) && !empty($d['month']) && !empty($d['day'])) {
                     if (!empty($d['year'])) {
-                        $year = (int)$d['year'];
-                        $month = (int)$d['month'];
-                        $day = (int)$d['day'];
+                        $year = (int) $d['year'];
+                        $month = (int) $d['month'];
+                        $day = (int) $d['day'];
                         $birthDateStr = sprintf('%04d-%02d-%02d', $year, $month, $day);
                         break;
                     }
@@ -205,9 +227,9 @@ class AuthController
             }
         }
 
-        $email = strtolower(sanitize_email((string)$userinfo['email']));
-        $first = trim((string)($userinfo['given_name'] ?? ''));
-        $last = trim((string)($userinfo['family_name'] ?? ''));
+        $email = strtolower(sanitize_email((string) $userinfo['email']));
+        $first = trim((string) ($userinfo['given_name'] ?? ''));
+        $last = trim((string) ($userinfo['family_name'] ?? ''));
 
         $pdo = db();
         $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
@@ -224,7 +246,7 @@ class AuthController
                 $stmt = $pdo->prepare('INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?,?,?,?)');
                 $stmt->execute([$email, hash_password($placeholder), $first, $last]);
             }
-            $userId = (int)$pdo->lastInsertId();
+            $userId = (int) $pdo->lastInsertId();
             $user = [
                 'id' => $userId,
                 'email' => $email,
@@ -243,28 +265,28 @@ class AuthController
             // If user exists without birth_date and we have it now, update
             if ($birthDateStr && empty($user['birth_date'])) {
                 $upd = $pdo->prepare('UPDATE users SET birth_date = ? WHERE id = ?');
-                $upd->execute([$birthDateStr, (int)$user['id']]);
+                $upd->execute([$birthDateStr, (int) $user['id']]);
                 $user['birth_date'] = $birthDateStr;
             }
         }
 
         // Establish session
         $_SESSION['user'] = [
-            'id' => (int)$user['id'],
+            'id' => (int) $user['id'],
             'email' => $user['email'],
             'firstName' => $user['first_name'],
             'lastName' => $user['last_name'],
             'membershipLevel' => $user['membership_level'] ?? 'basic',
-            'points' => (int)($user['points'] ?? 0),
-            'giftsReceived' => (int)($user['gifts_received'] ?? 0),
-            'giftsSent' => (int)($user['gifts_sent'] ?? 0),
-            'is_admin' => (int)($user['is_admin'] ?? 0),
+            'points' => (int) ($user['points'] ?? 0),
+            'giftsReceived' => (int) ($user['gifts_received'] ?? 0),
+            'giftsSent' => (int) ($user['gifts_sent'] ?? 0),
+            'is_admin' => (int) ($user['is_admin'] ?? 0),
             'birthDate' => $user['birth_date'] ?? null,
         ];
 
         // Redirect to app after login (prime localStorage for smoother UX)
-        $redirectPath = (string)($cfg['oauth']['redirect_after_login'] ?? '/mypage.php');
-        $hasLeadingSlash = (bool)preg_match('#^/#', $redirectPath);
+        $redirectPath = (string) ($cfg['oauth']['redirect_after_login'] ?? '/mypage.php');
+        $hasLeadingSlash = (bool) preg_match('#^/#', $redirectPath);
         $redirectUrl = $this->getBaseUrl() . ($hasLeadingSlash ? $redirectPath : ('/' . $redirectPath));
 
         header('Content-Type: text/html; charset=utf-8');
@@ -288,7 +310,8 @@ class AuthController
         $response = curl_exec($ch);
         $err = curl_error($ch);
         curl_close($ch);
-        if ($response === false) return [];
+        if ($response === false)
+            return [];
         $json = json_decode($response, true);
         return is_array($json) ? $json : [];
     }
@@ -301,7 +324,8 @@ class AuthController
         $response = curl_exec($ch);
         $err = curl_error($ch);
         curl_close($ch);
-        if ($response === false) return [];
+        if ($response === false)
+            return [];
         $json = json_decode($response, true);
         return is_array($json) ? $json : [];
     }

@@ -61,6 +61,7 @@ function loadUserData() {
     // Update profile information
     const profileName = document.querySelector('.profile-name');
     const profileEmail = document.querySelector('.profile-email');
+    const profileAvatar = document.querySelector('.profile-avatar');
     const userName = document.querySelector('.user-name');
     
     if (profileName) {
@@ -69,6 +70,14 @@ function loadUserData() {
     
     if (profileEmail) {
         profileEmail.textContent = userData.email || 'user@example.com';
+    }
+    if (profileAvatar) {
+        const url = userData.avatarUrl || userData.avatar_url;
+        if (url) {
+            profileAvatar.innerHTML = `<img src="${url}" alt="avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover" />`;
+        } else {
+            profileAvatar.innerHTML = `<i class="fas fa-user-circle"></i>`;
+        }
     }
     
     if (userName) {

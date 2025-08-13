@@ -7,7 +7,7 @@ class AdminController
     {
         if (!is_admin()) json_response(['error' => 'Forbidden'], 403);
         $pdo = db();
-        $stmt = $pdo->query('SELECT id, email, first_name, last_name, gifts_sent, gifts_received, membership_level, is_admin, created_at FROM users ORDER BY id DESC LIMIT 500');
+        $stmt = $pdo->query('SELECT id, email, first_name, last_name, birth_date, avatar_url, gifts_sent, gifts_received, membership_level, is_admin, created_at FROM users ORDER BY id DESC LIMIT 500');
         json_response(['items' => $stmt->fetchAll()]);
     }
 
@@ -19,12 +19,13 @@ class AdminController
         $password = (string)($d['password'] ?? '');
         $first = trim((string)($d['firstName'] ?? ''));
         $last = trim((string)($d['lastName'] ?? ''));
+        $birth = !empty($d['birthDate']) ? $d['birthDate'] : null;
         if (!$email || !$password) json_response(['error' => 'Invalid input'], 422);
         $pdo = db();
         $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
         $stmt->execute([$email]);
         if ($stmt->fetch()) json_response(['error' => 'Email already exists'], 409);
-        $pdo->prepare('INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?,?,?,?)')->execute([$email, hash_password($password), $first ?: null, $last ?: null]);
+        $pdo->prepare('INSERT INTO users (email, password_hash, first_name, last_name, birth_date) VALUES (?,?,?,?,?)')->execute([$email, hash_password($password), $first ?: null, $last ?: null, $birth ?: null]);
         json_response(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
     }
 
@@ -37,12 +38,15 @@ class AdminController
         $first = isset($d['firstName']) ? trim((string)$d['firstName']) : null;
         $last = isset($d['lastName']) ? trim((string)$d['lastName']) : null;
         $level = isset($d['membershipLevel']) ? (string)$d['membershipLevel'] : null;
+        $birth = array_key_exists('birthDate', $d) ? ($d['birthDate'] ?: null) : null; // allow nulling
         $pdo = db();
         $fields = [];
         $paramsSql = [];
         if ($first !== null) { $fields[] = 'first_name = ?'; $paramsSql[] = $first ?: null; }
         if ($last !== null) { $fields[] = 'last_name = ?'; $paramsSql[] = $last ?: null; }
         if ($level !== null) { $fields[] = 'membership_level = ?'; $paramsSql[] = in_array($level, ['basic','premium','business'], true) ? $level : 'basic'; }
+        if (array_key_exists('birthDate', $d)) { $fields[] = 'birth_date = ?'; $paramsSql[] = $birth; }
+        if (array_key_exists('avatarUrl', $d)) { $fields[] = 'avatar_url = ?'; $paramsSql[] = (trim((string)$d['avatarUrl']) ?: null); }
         if (!$fields) json_response(['error' => 'No fields'], 422);
         $paramsSql[] = $id;
         $sql = 'UPDATE users SET ' . implode(',', $fields) . ' WHERE id = ?';

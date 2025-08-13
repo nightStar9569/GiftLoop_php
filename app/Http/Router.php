@@ -19,11 +19,26 @@ class Router
         ];
     }
 
-    public function get(string $pattern, $handler, array $middleware = []): void { $this->add('GET', $pattern, $handler, $middleware); }
-    public function post(string $pattern, $handler, array $middleware = []): void { $this->add('POST', $pattern, $handler, $middleware); }
-    public function put(string $pattern, $handler, array $middleware = []): void { $this->add('PUT', $pattern, $handler, $middleware); }
-    public function patch(string $pattern, $handler, array $middleware = []): void { $this->add('PATCH', $pattern, $handler, $middleware); }
-    public function delete(string $pattern, $handler, array $middleware = []): void { $this->add('DELETE', $pattern, $handler, $middleware); }
+    public function get(string $pattern, $handler, array $middleware = []): void
+    {
+        $this->add('GET', $pattern, $handler, $middleware);
+    }
+    public function post(string $pattern, $handler, array $middleware = []): void
+    {
+        $this->add('POST', $pattern, $handler, $middleware);
+    }
+    public function put(string $pattern, $handler, array $middleware = []): void
+    {
+        $this->add('PUT', $pattern, $handler, $middleware);
+    }
+    public function patch(string $pattern, $handler, array $middleware = []): void
+    {
+        $this->add('PATCH', $pattern, $handler, $middleware);
+    }
+    public function delete(string $pattern, $handler, array $middleware = []): void
+    {
+        $this->add('DELETE', $pattern, $handler, $middleware);
+    }
 
     public function dispatch(string $route, string $method): void
     {
@@ -80,7 +95,8 @@ class Router
 
     private function match(string $regex, string $route, array &$params): bool
     {
-        if (!preg_match($regex, $route, $matches)) return false;
+        if (!preg_match($regex, $route, $matches))
+            return false;
         foreach ($matches as $key => $value) {
             if (!is_int($key)) {
                 $params[$key] = $value;
@@ -88,4 +104,4 @@ class Router
         }
         return true;
     }
-} 
+}

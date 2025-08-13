@@ -35,7 +35,8 @@ include __DIR__ . '/includes/header.php'; ?>
           <button type="submit" class="btn-auth"><i class="fas fa-sign-in-alt"></i> ログイン</button>
         </form>
         <div class="social-login">
-          <div class="divider" role="separator" aria-label="または" style="text-align: center;margin-bottom: 20px;"><span>または</span></div>
+          <div class="divider" role="separator" aria-label="または" style="text-align: center;margin-bottom: 20px;">
+            <span>または</span></div>
           <div class="social-buttons">
             <button class="btn-social btn-google"><i class="fab fa-google"></i> Googleでログイン</button>
           </div>
@@ -76,7 +77,8 @@ include __DIR__ . '/includes/header.php'; ?>
           <button type="submit" class="btn-auth"><i class="fas fa-user-plus"></i> 会員登録</button>
         </form>
         <div class="social-register">
-          <div class="divider" role="separator" aria-label="または" style="text-align: center;margin-block: 20px;"><span>または</span></div>
+          <div class="divider" role="separator" aria-label="または" style="text-align: center;margin-block: 20px;">
+            <span>または</span></div>
           <div class="social-buttons">
             <button class="btn-social btn-google"><i class="fab fa-google"></i> Googleで登録</button>
           </div>
