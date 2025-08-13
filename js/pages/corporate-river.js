@@ -7,7 +7,8 @@
     (items || []).forEach(item => {
       const card = document.createElement('div');
       card.className = 'recent-gift-card';
-      card.innerHTML = `<div class="gift-card"><div class="gift-icon"><i class="fas fa-gift"></i></div><div class="gift-info"><h4>${escapeHtml(item.title)}</h4><div class="gift-category">${escapeHtml(item.category)}</div></div></div>`;
+      const img = item.image_url ? `<div class=\"gift-image\" style=\"width:100%;height:140px;border-radius:12px;overflow:hidden;background:#f3f4f6;margin-bottom:8px\"><img src=\"${escapeHtml(item.image_url)}\" alt=\"${escapeHtml(item.title)}\" style=\"width:100%;height:100%;object-fit:cover\" /></div>` : `<div class=\"gift-icon\"><i class=\"fas fa-gift\"></i></div>`;
+      card.innerHTML = `<div class=\"gift-card\">${img}<div class=\"gift-info\"><h4>${escapeHtml(item.title)}</h4><div class=\"gift-category\">${escapeHtml(item.category)}</div></div></div>`;
       grid.appendChild(card);
     });
   }

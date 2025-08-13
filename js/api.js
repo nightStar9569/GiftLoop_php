@@ -100,16 +100,25 @@
 
     subscribe({ plan, price }) { return request('/subscription', { method: 'POST', body: JSON.stringify({ plan, price }) }); },
 
-    // Admin
+    // Admin Users
     adminUsers() { return request('/admin/users', { method: 'GET' }); },
-    adminGiftDelete(giftId) { return request('/gifts/delete', { method: 'POST', body: JSON.stringify({ giftId }) }); },
+    adminUserCreate({ email, password, firstName, lastName }) { return request('/admin/users', { method: 'POST', body: JSON.stringify({ email, password, firstName, lastName }) }); },
+    adminUserUpdate(id, payload) { return request(`/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }); },
+    adminUserDelete(id) { return request(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
+    adminUserToggleAdmin(id) { return request(`/admin/users/${encodeURIComponent(id)}/toggle-admin`, { method: 'POST' }); },
+
+    // Admin Gifts
+    adminGifts() { return request('/admin/gifts', { method: 'GET' }); },
+    adminGiftCreate(payload) { return request('/admin/gifts', { method: 'POST', body: JSON.stringify(payload) }); },
+    adminGiftUpdate(id, payload) { return request(`/admin/gifts/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }); },
+    adminGiftDelete(id) { return request(`/admin/gifts/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
     adminGiftToggle(giftId) { return request('/gifts/toggle', { method: 'POST', body: JSON.stringify({ giftId }) }); },
 
-    // Corporate
-    corporateRiver() { return request('/corporate/river', { method: 'GET' }); },
-    corporateDraw() { return request('/corporate/draw', { method: 'POST' }); },
-    corporateAwards() { return request('/corporate/awards', { method: 'GET' }); },
-    corporateReview({ giftId, rating, comment }) { return request('/corporate/reviews', { method: 'POST', body: JSON.stringify({ giftId, rating, comment }) }); },
+    // Admin Corporate Gifts
+    adminCorporate() { return request('/admin/corporate', { method: 'GET' }); },
+    adminCorporateCreate(payload) { return request('/admin/corporate', { method: 'POST', body: JSON.stringify(payload) }); },
+    adminCorporateUpdate(id, payload) { return request(`/admin/corporate/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }); },
+    adminCorporateDelete(id) { return request(`/admin/corporate/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
   };
 
   window.giftApi = api;

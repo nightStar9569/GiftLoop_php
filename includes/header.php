@@ -27,7 +27,7 @@ $__appBase = is_array($__cfg) && isset($__cfg['app']['base_path']) ? $__cfg['app
           <li><a href="index.php" data-nav="home" title="ホーム">ホーム</a></li>
           <li><a href="shop.php" data-nav="shop" title="ショップ">ショップ</a></li>
           <li><a href="river.php" data-nav="river" title="ギフトリバー">ギフトリバー</a></li>
-          <li><a href="corporate-river.php" data-nav="corporate-river" title="企業ギフトの川">企業ギフトの川</a></li>
+          <li><a href="corporate-river.php" data-nav="corporate-river" title="企業ギフト">企業ギフト</a></li>
           <li><a href="send-gift.php" data-nav="send-gift" title="ギフトを贈る">ギフトを贈る</a></li>
           <li><a href="receive-gift.php" data-nav="receive-gift" title="ギフトを受け取る">ギフトを受け取る</a></li>
           <li class="admin-nav" style="display: none"><a href="admin.php" data-nav="admin">管理</a></li>

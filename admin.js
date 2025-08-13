@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   initGiftsPanel();
   initCorporatePanel();
   initUsersPanel();
+  initGiftForm();
+  initCorpForm();
+  initUserForm();
 });
 
 function initTabs() {
@@ -39,6 +42,215 @@ function initTabs() {
       tab.classList.add('active');
       document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
     });
+  });
+}
+
+// Gift create/update form
+function initGiftForm() {
+  const form = document.getElementById('giftForm');
+  if (!form) return;
+  const idEl = document.getElementById('giftFormId');
+  const nameEl = document.getElementById('giftFormName');
+  const priceEl = document.getElementById('giftFormPrice');
+  const catEl = document.getElementById('giftFormCategory');
+  const statusEl = document.getElementById('giftFormStatus');
+  const descEl = document.getElementById('giftFormDesc');
+  const superEl = document.getElementById('giftFormSuper');
+  const resetBtn = document.getElementById('giftFormReset');
+  const imgEl = document.getElementById('giftFormImage');
+  const imgFile = document.getElementById('giftFormImageFile');
+  if (imgFile) {
+    imgFile.addEventListener('change', async () => {
+      const file = imgFile.files && imgFile.files[0];
+      if (!file) return;
+      try {
+        showNotification('画像をアップロード中...', 'info');
+        const fd = new FormData();
+        fd.append('file', file);
+        const url = await uploadAdminFile(fd);
+        if (imgEl) imgEl.value = url;
+        showNotification('アップロード完了', 'success');
+      } catch (e) {
+        showNotification(e.message || 'アップロードに失敗しました。', 'error');
+      } finally {
+        imgFile.value = '';
+      }
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: (nameEl?.value || '').trim(),
+      price: Number(priceEl?.value || 0),
+      category: catEl?.value || 'other',
+      description: (descEl?.value || '').trim() || null,
+      imageUrl: (imgEl?.value || '').trim() || null,
+      isSuper: !!(superEl && superEl.checked),
+      status: statusEl?.value || 'created',
+    };
+    if (!payload.name || !payload.price) {
+      showNotification('名前と価格を入力してください。', 'error');
+      return;
+    }
+    try {
+      const id = (idEl?.value || '').trim();
+      if (id) {
+        await giftApi.adminGiftUpdate(id, payload);
+      } else {
+        const res = await giftApi.adminGiftCreate(payload);
+        if (idEl) idEl.value = String(res.id || '');
+      }
+      showNotification('保存しました。', 'success');
+      // Refresh list
+      document.getElementById('giftSearch')?.dispatchEvent(new Event('input'));
+    } catch (e) {
+      showNotification(e.message || '保存に失敗しました。', 'error');
+    }
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    if (idEl) idEl.value = '';
+    if (nameEl) nameEl.value = '';
+    if (priceEl) priceEl.value = '';
+    if (catEl) catEl.value = 'other';
+    if (statusEl) statusEl.value = 'created';
+    if (descEl) descEl.value = '';
+    if (imgEl) imgEl.value = '';
+    if (superEl) superEl.checked = false;
+  });
+}
+
+async function uploadAdminFile(formData){
+  // Try using API builder directly to preserve cookies
+  const makeUrl = (path) => {
+    try {
+      // reuse buildUrl by crafting a temporary request
+      return (function(){
+        const parts = window.location.pathname.split('/').filter(Boolean); parts.pop();
+        const base = '/' + parts.join('/');
+        return `${base}/api/admin/upload`;
+      })();
+    } catch(_) { return '/GiftLoop/api/admin/upload'; }
+  };
+  const resp = await fetch(makeUrl('/admin/upload'), { method: 'POST', body: formData, credentials: 'include' });
+  const data = await resp.json().catch(()=>({}));
+  if (!resp.ok) throw new Error(data && data.error ? data.error : `HTTP ${resp.status}`);
+  return data.url;
+}
+
+// Corporate gift create/update form
+function initCorpForm() {
+  const form = document.getElementById('corpForm');
+  if (!form) return;
+  const idEl = document.getElementById('corpFormId');
+  const titleEl = document.getElementById('corpTitle');
+  const catEl = document.getElementById('corpCategory');
+  const spdEl = document.getElementById('corpSupplyPerDay');
+  const totalEl = document.getElementById('corpTotalSupply');
+  const startEl = document.getElementById('corpStartAt');
+  const endEl = document.getElementById('corpEndAt');
+  const descEl = document.getElementById('corpDescription');
+  const superEl = document.getElementById('corpIsSuper');
+  const resetBtn = document.getElementById('corpFormReset');
+  const imgEl = document.getElementById('corpImageUrl');
+  const imgFile = document.getElementById('corpImageFile');
+  if (imgFile) {
+    imgFile.addEventListener('change', async () => {
+      const file = imgFile.files && imgFile.files[0];
+      if (!file) return;
+      try {
+        showNotification('画像をアップロード中...', 'info');
+        const fd = new FormData();
+        fd.append('file', file);
+        const url = await uploadAdminFile(fd);
+        if (imgEl) imgEl.value = url;
+        showNotification('アップロード完了', 'success');
+      } catch (e) {
+        showNotification(e.message || 'アップロードに失敗しました。', 'error');
+      } finally {
+        imgFile.value = '';
+      }
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      title: (titleEl?.value || '').trim(),
+      category: catEl?.value || 'other',
+      supplyPerDay: Number(spdEl?.value || 0),
+      totalSupply: totalEl?.value ? Number(totalEl.value) : null,
+      startAt: startEl?.value || '',
+      endAt: endEl?.value || '',
+      description: (descEl?.value || '').trim() || null,
+      imageUrl: (imgEl?.value || '').trim() || null,
+      isSuper: !!(superEl && superEl.checked),
+    };
+    if (!payload.title || !payload.startAt || !payload.endAt) {
+      showNotification('タイトルと期間を入力してください。', 'error');
+      return;
+    }
+    try {
+      const id = (idEl?.value || '').trim();
+      if (id) {
+        await giftApi.adminCorporateUpdate(id, payload);
+      } else {
+        const res = await giftApi.adminCorporateCreate(payload);
+        if (idEl) idEl.value = String(res.id || '');
+      }
+      showNotification('保存しました。', 'success');
+      // Refresh list
+      const list = document.getElementById('corporateGiftsList');
+      if (list) { list.innerHTML = ''; }
+      // Re-render
+      initCorporatePanel();
+    } catch (e) {
+      showNotification(e.message || '保存に失敗しました。', 'error');
+    }
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    if (idEl) idEl.value = '';
+    if (titleEl) titleEl.value = '';
+    if (catEl) catEl.value = 'other';
+    if (spdEl) spdEl.value = '';
+    if (totalEl) totalEl.value = '';
+    if (startEl) startEl.value = '';
+    if (endEl) endEl.value = '';
+    if (descEl) descEl.value = '';
+    if (imgEl) imgEl.value = '';
+    if (superEl) superEl.checked = false;
+  });
+}
+
+// User create form
+function initUserForm() {
+  const form = document.getElementById('userForm');
+  if (!form) return;
+  const emailEl = document.getElementById('userEmail');
+  const passEl = document.getElementById('userPassword');
+  const firstEl = document.getElementById('userFirstName');
+  const lastEl = document.getElementById('userLastName');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = (emailEl?.value || '').trim();
+    const password = (passEl?.value || '').trim();
+    const firstName = (firstEl?.value || '').trim();
+    const lastName = (lastEl?.value || '').trim();
+    if (!email || !password) { showNotification('メールとパスワードを入力してください。','error'); return; }
+    try {
+      await giftApi.adminUserCreate({ email, password, firstName, lastName });
+      showNotification('ユーザーを作成しました。','success');
+      if (emailEl) emailEl.value = '';
+      if (passEl) passEl.value = '';
+      if (firstEl) firstEl.value = '';
+      if (lastEl) lastEl.value = '';
+      document.getElementById('refreshData')?.click();
+    } catch (e) {
+      showNotification(e.message || '作成に失敗しました。','error');
+    }
   });
 }
 
@@ -101,13 +313,9 @@ function initGiftsPanel() {
     const q = (searchEl?.value || '').trim().toLowerCase();
     (async () => {
       try {
-        const res = await giftApi.gifts();
+        const res = await giftApi.adminGifts();
         let items = (res.items || []).filter(g => {
-          const matchesText = !q ||
-            (g.name||'').toLowerCase().includes(q) ||
-            (g.senderName||'').toLowerCase().includes(q) ||
-            (g.recipientName||'').toLowerCase().includes(q) ||
-            (g.recipientEmail||'').toLowerCase().includes(q);
+          const matchesText = !q || (g.name||'').toLowerCase().includes(q);
           const matchesStatus = activeStatus === 'all' || g.status === activeStatus;
           const matchesCategory = activeCategory === 'all' || g.category === activeCategory;
           return matchesText && matchesStatus && matchesCategory;
@@ -119,7 +327,7 @@ function initGiftsPanel() {
           case 'name_asc': items.sort((a,b)=> (a.name||'').localeCompare(b.name||'')); break;
           case 'recent':
           default:
-            items.sort((a,b)=> new Date(b.sent_at||b.created_at||0)-new Date(a.sent_at||a.created_at||0));
+            items.sort((a,b)=> new Date(b.created_at||0)-new Date(a.created_at||0));
         }
         renderList(items);
       } catch (e) {
@@ -141,49 +349,103 @@ function initGiftsPanel() {
       row.className = 'admin-row';
       row.innerHTML = `
         <div class="admin-row-main">
-          <div class="icon" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#f3f4f6; color:${g.isSuper?'#ffd700':'#e91e63'};">
-            <i class="fas ${g.isSuper?'fa-crown':'fa-gift'}"></i>
-          </div>
+          ${g.image_url ? `<div class="thumb" style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex:0 0 auto;background:#f3f4f6;display:flex;align-items:center;justify-content:center"><img src="${g.image_url}" alt="${g.name||''}" style="width:100%;height:100%;object-fit:cover" /></div>` : `<div class="icon" style="width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#f3f4f6; color:${g.isSuper?'#ffd700':'#e91e63'};"><i class="fas ${g.isSuper?'fa-crown':'fa-gift'}"></i></div>`}
           <div class="meta">
             <div class="title">${g.name||'-'}</div>
-            <div class="sub">¥${(g.price||0).toLocaleString()} ・ ${getCategoryText(g.category)} ・ 状態: ${g.status||'-'}</div>
+            <div class="sub">¥${(g.price||0).toLocaleString()} ・ ${getCategoryText(g.category)} ・ 状態: ${getStatusText(g.status)}</div>
           </div>
         </div>
         <div class="admin-row-actions">
-          <button class="btn-primary" data-action="view">詳細</button>
-          <button class="btn-primary" data-action="toggle-status">状態変更</button>
+          <button class="btn-primary" data-action="edit">編集</button>
           <button class="btn-primary" data-action="delete">削除</button>
         </div>`;
 
-      row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteGift(g.id));
-      row.querySelector('[data-action="toggle-status"]').addEventListener('click', () => toggleGiftStatus(g.id));
-      row.querySelector('[data-action="view"]').addEventListener('click', () => viewGift(g));
+      row.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+        if (!confirm('このギフトを削除しますか？')) return;
+        try { await giftApi.adminGiftDelete(g.id); showNotification('ギフトを削除しました。','success'); apply(); } catch(e){ showNotification(e.message||'削除に失敗しました。','error'); }
+      });
+      row.querySelector('[data-action="edit"]').addEventListener('click', async () => openGiftEditModal(g));
 
       giftsList.appendChild(row);
     });
   }
 
-  async function deleteGift(id) {
-    try {
-      await giftApi.adminGiftDelete(id);
-      showNotification('ギフトを削除しました。', 'success');
-      apply();
-    } catch (e) {
-      showNotification(e.message || '削除に失敗しました。', 'error');
+  // Modal handlers for gift editing
+  function openGiftEditModal(gift){
+    const modal = document.getElementById('giftEditModal');
+    if (!modal) return;
+    // Prefill
+    assignValue('giftEditId', gift.id);
+    assignValue('giftEditName', gift.name||'');
+    assignValue('giftEditPrice', gift.price||0);
+    setSelect('giftEditCategory', gift.category||'other');
+    setSelect('giftEditStatus', gift.status||'created');
+    assignValue('giftEditDesc', gift.description||'');
+    assignValue('giftEditImage', gift.image_url||'');
+    const superEl = document.getElementById('giftEditSuper');
+    if (superEl) superEl.checked = !!gift.isSuper;
+
+    // Upload handler
+    const fileEl = document.getElementById('giftEditImageFile');
+    if (fileEl && !fileEl._bound) {
+      fileEl.addEventListener('change', async () => {
+        const file = fileEl.files && fileEl.files[0]; if (!file) return;
+        try {
+          showNotification('画像をアップロード中...', 'info');
+          const fd = new FormData(); fd.append('file', file);
+          const url = await uploadAdminFile(fd);
+          assignValue('giftEditImage', url);
+          showNotification('アップロード完了', 'success');
+        } catch(e){ showNotification(e.message||'アップロードに失敗しました。','error'); }
+        fileEl.value='';
+      });
+      fileEl._bound = true;
     }
-  }
-  async function toggleGiftStatus(id) {
-    try {
-      const res = await giftApi.adminGiftToggle(id);
-      showNotification(`状態を「${res.status}」に更新しました。`, 'info');
-      apply();
-    } catch (e) {
-      showNotification(e.message || '更新に失敗しました。', 'error');
+
+    // Submit handler
+    const form = document.getElementById('giftEditForm');
+    if (form && !form._bound) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = getValue('giftEditId');
+        const payload = {
+          name: getValue('giftEditName'),
+          price: Number(getValue('giftEditPrice')||0),
+          category: getSelect('giftEditCategory'),
+          status: getSelect('giftEditStatus'),
+          description: getValue('giftEditDesc') || null,
+          imageUrl: getValue('giftEditImage') || null,
+          isSuper: !!(document.getElementById('giftEditSuper')?.checked)
+        };
+        if (!payload.name || !payload.price) { showNotification('名前と価格を入力してください。','error'); return; }
+        try {
+          await giftApi.adminGiftUpdate(id, payload);
+          showNotification('更新しました。','success');
+          closeGiftEditModal();
+          // Refresh list
+          document.getElementById('giftSearch')?.dispatchEvent(new Event('input'));
+        } catch(e){ showNotification(e.message||'更新に失敗しました。','error'); }
+      });
+      form._bound = true;
     }
+
+    const cancelBtn = document.getElementById('giftEditCancel');
+    if (cancelBtn && !cancelBtn._bound) {
+      cancelBtn.addEventListener('click', closeGiftEditModal);
+      cancelBtn._bound = true;
+    }
+    modal.style.display = 'flex';
   }
-  function viewGift(g) {
-    showNotification(`${g.name} | ¥${(g.price||0).toLocaleString()} | ${getCategoryText(g.category)} | 状態: ${g.status}`,'info');
+
+  function closeGiftEditModal(){
+    const modal = document.getElementById('giftEditModal');
+    if (modal) modal.style.display = 'none';
   }
+
+  function assignValue(id, v){ const el = document.getElementById(id); if (el) el.value = v; }
+  function getValue(id){ const el = document.getElementById(id); return el ? el.value : ''; }
+  function setSelect(id, v){ const el = document.getElementById(id); if (el) el.value = v; }
+  function getSelect(id){ const el = document.getElementById(id); return el ? el.value : ''; }
 
   searchEl?.addEventListener('input', apply);
   sortEl?.addEventListener('change', apply);
@@ -193,53 +455,45 @@ function initGiftsPanel() {
 
 // Corporate Gifts
 function initCorporatePanel() {
-  const addBtn = document.getElementById('addCorporateGift');
   const listEl = document.getElementById('corporateGiftsList');
-  const key = 'corporateGifts';
-
-  addBtn?.addEventListener('click', () => {
-    const name = document.getElementById('corpName').value.trim();
-    const category = document.getElementById('corpCategory').value;
-    const price = Number(document.getElementById('corpPrice').value || 0);
-    const quantity = Number(document.getElementById('corpQuantity').value || 1);
-    if (!name) return showNotification('名称を入力してください。','error');
-    const corpGifts = JSON.parse(localStorage.getItem(key) || '[]');
-    corpGifts.push({ id: 'corp_'+Math.random().toString(36).slice(2), name, category, price, quantity, createdAt: new Date().toISOString() });
-    localStorage.setItem(key, JSON.stringify(corpGifts));
-    showNotification('会社ギフトを追加しました。','success');
-    render();
-  });
-
-  function render() {
-    const corpGifts = JSON.parse(localStorage.getItem(key) || '[]');
-    listEl.innerHTML = '';
-    if (!corpGifts.length) {
-      listEl.innerHTML = '<div class="empty-card">会社ギフトがありません</div>';
-      return;
-    }
-    corpGifts.forEach(c => {
-      const row = document.createElement('div');
-      row.className = 'admin-row';
-      row.innerHTML = `
-        <div class="admin-row-main">
-          <div class="meta">
-            <div class="title">${c.name}</div>
-            <div class="sub">カテゴリー: ${getCategoryText(c.category)} ・ 価格: ¥${(c.price||0).toLocaleString()} ・ 数量: ${c.quantity}</div>
+  async function render() {
+    if (!listEl) return;
+    try {
+      const res = await giftApi.adminCorporate();
+      const items = res.items || [];
+      listEl.innerHTML = '';
+      if (!items.length) { listEl.innerHTML = '<div class="empty-card">会社ギフトがありません</div>'; return; }
+      items.forEach(c => {
+        const row = document.createElement('div');
+        row.className = 'admin-row';
+        row.innerHTML = `
+          <div class="admin-row-main">
+            <div style="display:flex; gap:12px; align-items:center">
+              ${c.image_url ? `<div class="thumb" style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex:0 0 auto;background:#f3f4f6;display:flex;align-items:center;justify-content:center"><img src="${c.image_url}" alt="${c.title||''}" style="width:100%;height:100%;object-fit:cover" /></div>` : ''}
+              <div>
+                <div class="title">${c.title}</div>
+                <div class="sub">カテゴリ: ${c.category} ・ 期間: ${c.start_at} 〜 ${c.end_at}</div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="admin-row-actions">
-          <button class="btn-primary" data-action="delete">削除</button>
-        </div>`;
-      row.querySelector('[data-action="delete"]').addEventListener('click', () => {
-        const next = (JSON.parse(localStorage.getItem(key) || '[]')).filter(x => x.id !== c.id);
-        localStorage.setItem(key, JSON.stringify(next));
-        showNotification('会社ギフトを削除しました。','success');
-        render();
+          <div class="admin-row-actions">
+            <button class="btn-primary" data-action="edit">編集</button>
+            <button class="btn-primary" data-action="delete">削除</button>
+          </div>`;
+        row.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+          try { await giftApi.adminCorporateDelete(c.id); showNotification('削除しました。','success'); render(); } catch(e){ showNotification(e.message||'削除に失敗しました。','error'); }
+        });
+        row.querySelector('[data-action="edit"]').addEventListener('click', async () => {
+          const title = prompt('タイトル', c.title||''); if (title===null) return;
+          const category = prompt('カテゴリ', c.category||'other')||'other';
+          try { await giftApi.adminCorporateUpdate(c.id, { title, category }); showNotification('更新しました。','success'); render(); } catch(e){ showNotification(e.message||'更新に失敗しました。','error'); }
+        });
+        listEl.appendChild(row);
       });
-      listEl.appendChild(row);
-    });
+    } catch (e) {
+      showNotification(e.message||'取得に失敗しました。','error');
+    }
   }
-
   render();
 }
 
@@ -250,48 +504,33 @@ function initUsersPanel() {
   const refreshBtn = document.getElementById('refreshData');
   const exportBtn = document.getElementById('exportData');
 
-  function fetchUsers() {
-    // In this demo, we have only current user data and gifts to derive stats
-    const currentUser = JSON.parse(localStorage.getItem('userData') || '{}');
-    const gifts = JSON.parse(localStorage.getItem('gifts') || '[]');
-
-    // Build a user map from sender/receiver data
-    const map = new Map();
-    function ensureUser(id, email, name) {
-      if (!id) return;
-      if (!map.has(id)) map.set(id, { id, email: email||'', name: name||'ユーザー', giftsSent:0, giftsReceived:0, lastActive: null });
-      return map.get(id);
-    }
-
-    gifts.forEach(g => {
-      const sender = ensureUser(g.senderId, '', g.senderName);
-      const receiver = ensureUser(g.receiverId, '', '受取人');
-      if (sender) { sender.giftsSent += 1; sender.lastActive = g.sentAt || g.createdAt || sender.lastActive; }
-      if (receiver) { receiver.giftsReceived += 1; receiver.lastActive = g.receivedAt || receiver.lastActive; }
-    });
-
-    // Add current user to map as reference
-    if (currentUser?.id) ensureUser(currentUser.id, currentUser.email, `${currentUser.firstName||''}`);
-
-    return Array.from(map.values());
+  async function fetchUsers() {
+    const res = await giftApi.adminUsers();
+    return res.items || [];
   }
 
-  function render() {
-    const users = fetchUsers();
-    const totalSent = users.reduce((sum,u)=> sum+u.giftsSent, 0);
-    const totalReceived = users.reduce((sum,u)=> sum+u.giftsReceived, 0);
-    statsEl.innerHTML = `送信合計: <strong>${totalSent}</strong> ・ 受信合計: <strong>${totalReceived}</strong> ・ ユーザー数: <strong>${users.length}</strong>`;
+  async function render() {
+    const users = await fetchUsers();
+    const totalSent = users.reduce((sum,u)=> sum+(u.gifts_sent||0), 0);
+    const totalReceived = users.reduce((sum,u)=> sum+(u.gifts_received||0), 0);
+    if (statsEl) statsEl.innerHTML = `送信合計: <strong>${totalSent}</strong> ・ 受信合計: <strong>${totalReceived}</strong> ・ ユーザー数: <strong>${users.length}</strong>`;
 
     tableBody.innerHTML = '';
     users.forEach(u => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${u.name}</td>
+        <td>${(u.first_name||'') + ' ' + (u.last_name||'')}</td>
         <td>${u.email}</td>
-        <td>${u.giftsSent}</td>
-        <td>${u.giftsReceived}</td>
-        <td>${u.lastActive ? new Date(u.lastActive).toLocaleString('ja-JP') : '-'}</td>
+        <td>${u.gifts_sent||0}</td>
+        <td>${u.gifts_received||0}</td>
+        <td>${u.is_admin? '管理者' : '-'}</td>
       `;
+      tr.addEventListener('click', async () => {
+        const isAdmin = confirm('管理者権限を切り替えますか？ (OKで切替)');
+        if (isAdmin) {
+          try { await giftApi.adminUserToggleAdmin(u.id); showNotification('権限を更新しました。','success'); render(); } catch(e){ showNotification(e.message||'更新に失敗しました。','error'); }
+        }
+      });
       tableBody.appendChild(tr);
     });
   }
@@ -316,6 +555,17 @@ function initUsersPanel() {
 }
 
 // Helper
+function getStatusText(status) {
+  const map = {
+    created: '作成済',
+    sent: '送信済',
+    pending: '保留中',
+    accepted: '受取済',
+    rejected: '拒否済',
+    owned: '所有済'
+  };
+  return map[String(status || '')] || '-';
+}
 function getCategoryText(category) {
   const categories = {
     food: '食品・スイーツ',
@@ -329,3 +579,4 @@ function getCategoryText(category) {
   };
   return categories[category] || 'その他';
 } 
+ 

@@ -31,6 +31,28 @@ if (isset($_GET['r']) && is_string($_GET['r']) && $_GET['r'] !== '') {
     $route = trim($_GET['r'], '/');
 }
 
+// Serve uploaded files directly when requested under /api/uploads
+if (preg_match('#^uploads/([a-zA-Z0-9_\-]+\.(?:jpg|jpeg|png|gif|webp))$#', $route, $m)) {
+    $filePath = __DIR__ . '/' . $route;
+    if (is_file($filePath)) {
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $types = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+        ];
+        $ctype = $types[$ext] ?? 'application/octet-stream';
+        header('Content-Type: ' . $ctype);
+        header('Content-Length: ' . filesize($filePath));
+        readfile($filePath);
+        exit;
+    }
+    http_response_code(404);
+    exit;
+}
+
 try {
     // Subscription left inline for brevity; others handled by controllers/routes
     if ($route === 'subscription' && $method === 'POST') {
@@ -41,7 +63,7 @@ try {
         $pdo = db();
         $pdo->beginTransaction();
         try {
-            $pdo->prepare('INSERT INTO subscriptions (user_id, plan, price, status) VALUES (?,?,?,"active")')->execute([$user['id'], $plan, $price]);
+            $pdo->prepare('INSERT INTO subscriptions (user_id, plan, price, status) VALUES (?,?,? ,"active")')->execute([$user['id'], $plan, $price]);
             $pdo->prepare('UPDATE users SET membership_level = ? WHERE id = ?')->execute([$plan, $user['id']]);
             $pdo->commit();
             $_SESSION['user']['membershipLevel'] = $plan;

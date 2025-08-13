@@ -8,6 +8,9 @@ api/client_secret_985659823724-1a529ndasdr09aenc9jvjcj6e15jt6qu.apps.googleuserc
 *.log
 logs/
 
+# Uploads (generated at runtime)
+api/uploads/
+
 # OS junk
 .DS_Store
 Thumbs.db

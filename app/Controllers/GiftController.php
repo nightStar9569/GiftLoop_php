@@ -65,15 +65,14 @@ class GiftController
         json_response(['ok' => true]);
     }
 
-    public function adminDelete(): void
+    public function adminDelete(array $params): void
     {
         if (!is_admin()) json_response(['error' => 'Forbidden'], 403);
-        $data = read_json_body();
-        $giftId = int_or_zero($data['giftId'] ?? 0);
-        if ($giftId <= 0) json_response(['error' => 'Invalid gift'], 422);
+        $id = int_or_zero($params['id'] ?? 0);
+        if ($id <= 0) json_response(['error' => 'Invalid id'], 422);
         $pdo = db();
         $stmt = $pdo->prepare('DELETE FROM gifts WHERE id = ?');
-        $stmt->execute([$giftId]);
+        $stmt->execute([$id]);
         json_response(['ok' => true]);
     }
 
@@ -95,5 +94,58 @@ class GiftController
         $next = $order[(($idx === false ? 0 : $idx) + 1) % count($order)];
         $pdo->prepare('UPDATE gifts SET status = ? WHERE id = ?')->execute([$next, $giftId]);
         json_response(['ok' => true, 'status' => $next]);
+    }
+
+    // Admin CRUD for general gifts
+    public function adminList(): void
+    {
+        if (!is_admin()) json_response(['error' => 'Forbidden'], 403);
+        $pdo = db();
+        $stmt = $pdo->query('SELECT * FROM gifts ORDER BY id DESC LIMIT 500');
+        json_response(['items' => $stmt->fetchAll()]);
+    }
+
+    public function adminCreate(): void
+    {
+        if (!is_admin()) json_response(['error' => 'Forbidden'], 403);
+        $d = read_json_body();
+        $name = trim((string)($d['name'] ?? ''));
+        $price = int_or_zero($d['price'] ?? 0);
+        $category = trim((string)($d['category'] ?? 'other'));
+        $desc = isset($d['description']) ? (string)$d['description'] : null;
+        $isSuper = !empty($d['isSuper']) ? 1 : 0;
+        $imageUrl = isset($d['imageUrl']) ? trim((string)$d['imageUrl']) : null;
+        if (!$name || $price <= 0) json_response(['error' => 'Invalid input'], 422);
+        $pdo = db();
+        $stmt = $pdo->prepare('INSERT INTO gifts (name, description, price, category, is_super, status, image_url) VALUES (?,?,?,?,?,"created",?)');
+        $stmt->execute([$name, $desc, $price, $category, $isSuper, $imageUrl ?: null]);
+        json_response(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+    }
+
+    public function adminUpdate(array $params): void
+    {
+        if (!is_admin()) json_response(['error' => 'Forbidden'], 403);
+        $id = int_or_zero($params['id'] ?? 0);
+        if ($id <= 0) json_response(['error' => 'Invalid id'], 422);
+        $d = read_json_body();
+        $fields = [];
+        $values = [];
+        foreach ([
+            'name' => 'name', 'description' => 'description', 'price' => 'price',
+            'category' => 'category', 'isSuper' => 'is_super', 'status' => 'status', 'imageUrl' => 'image_url'
+        ] as $in => $col) {
+            if (array_key_exists($in, $d)) {
+                $val = $d[$in];
+                if ($col === 'is_super') $val = !empty($val) ? 1 : 0;
+                if ($col === 'price') $val = int_or_zero($val);
+                $fields[] = "$col = ?";
+                $values[] = ($col === 'image_url') ? (trim((string)$val) ?: null) : $val;
+            }
+        }
+        if (!$fields) json_response(['error' => 'No fields'], 422);
+        $values[] = $id;
+        $sql = 'UPDATE gifts SET ' . implode(', ', $fields) . ' WHERE id = ?';
+        db()->prepare($sql)->execute($values);
+        json_response(['ok' => true]);
     }
 } 
